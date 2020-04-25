@@ -11,6 +11,8 @@ contract UniswapConnector {
   DefiDollarCore public defiDollarCore;
   DefiDollarToken public token;
 
+  uint256 public constant UINT_MAX_VALUE = uint256(-1);
+
   constructor(address _defiDollarCore, address _defiDollarToken, address _uniswap) public {
     defiDollarCore = DefiDollarCore(_defiDollarCore);
     token = DefiDollarToken(_defiDollarToken);
@@ -30,13 +32,24 @@ contract UniswapConnector {
     );
     (address[] memory reserves, uint256[] memory amounts) = defiDollarCore.getPoolDelta(pIssue);
     uint256 cumulativeIn = 0;
+    uint[] memory _tradeAmounts;
+    address[] memory path = new address[](2);
+    path[0] = inToken;
     for (uint8 i = 0; i < reserves.length; i++) {
-      uint256 _in = uniswap.tradeExactOut(
-        inToken,
-        address(reserves[i]), // out token
-        amounts[i] // receive exactly inReserve # of out token
+      path[1] = reserves[i];
+      _tradeAmounts = uniswap.swapTokensForExactTokens(
+        amounts[i], // amountOut
+        UINT_MAX_VALUE, // amountInMax
+        path,
+        address(defiDollarCore), // to
+        UINT_MAX_VALUE // deadline
       );
-      cumulativeIn += _in;
+      cumulativeIn += _tradeAmounts[0];
+      // this check most likely is redundant. Remove later
+      require(
+        _tradeAmounts[_tradeAmounts.length - 1] == amounts[i],
+        "Didn't get exact amount"
+      );
     }
     defiDollarCore.mint(pIssue, msg.sender);
     // If the required amount is greater than maxInQuantity, uniswap trade would already have been reverted by now
@@ -62,21 +75,28 @@ contract UniswapConnector {
     defiDollarCore.redeem(pRedeem, address(this));
     (address[] memory reserves, uint256[] memory amounts) = defiDollarCore.getPoolDelta(pRedeem);
     uint256 cumulativeOut = 0;
+    uint[] memory _tradeAmounts;
+    address[] memory path = new address[](2);
+    path[1] = outToken; // for now, assume that a direct path exists
     for (uint8 i = 0; i < reserves.length; i++) {
-      uint256 out = uniswap.tradeExactIn(
-        reserves[i], // in token
-        outToken,
-        amounts[i] // exact in amount
+      path[0] = reserves[i];
+      _tradeAmounts = uniswap.swapExactTokensForTokens(
+        amounts[i], // exact amountIn
+        0, // amountOutMin
+        path,
+        msg.sender, // to
+        UINT_MAX_VALUE
       );
-      cumulativeOut += out;
+      cumulativeOut += _tradeAmounts[_tradeAmounts.length - 1];
+      // this check most likely is redundant. Remove later
+      require(
+        _tradeAmounts[0] == amounts[i],
+        "Didn't get exact amount"
+      );
     }
     require(
       cumulativeOut >= minOutQuantity,
       "Too much slippage"
-    );
-    require(
-      IERC20(outToken).transfer(msg.sender, cumulativeOut),
-      "Token transfer failed"
     );
   }
 }
