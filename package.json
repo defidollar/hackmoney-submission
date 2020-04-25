@@ -16,8 +16,8 @@
     "web3": "^1.2.6"
   },
   "scripts": {
-    "test": "mocha",
-    "compile": "npx buidler compile"
+    "compile": "npx buidler compile",
+    "test": "npx buidler test"
   },
   "author": "atvanguard <93arpit@gmail.com>",
   "license": "ISC"
