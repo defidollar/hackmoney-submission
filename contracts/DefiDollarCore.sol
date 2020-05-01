@@ -59,7 +59,8 @@ contract DefiDollarCore {
     }
     bpool.setSwapFee(0);
     bpool.softFinalize();
-    token.mint(msg.sender, INIT_POOL_SUPPLY);
+    token.mint(msg.sender, balances[0] + balances[1]);
+    // token.mint(msg.sender, INIT_POOL_SUPPLY);
   }
 
   function mintExactIn(address reserve, uint tokenAmountIn, uint minPoolAmountOut, address to)

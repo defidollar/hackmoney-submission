@@ -26,24 +26,6 @@ contract("DefiDollarCore", accounts => {
     }
   })
 
-  it('initialize core', async function() {
-    const amount = toWei('100')
-    const balances = []
-    const denorm = []
-    for (let i = 0; i < this.numReserves; i++) {
-      await this.reserves[i].mint(admin, toWei('100000'))
-      await this.reserves[i].approve(this.core.address, MAX)
-      balances.push(amount)
-      denorm.push(web3.utils.toWei('25')) // Required %age share / 2
-    }
-    await this.core.initialize(
-      this.defiDollarToken.address,
-      this.bFactory.address,
-      balances,
-      denorm
-    )
-  })
-
   it('core has bpool balance', async function() {
     this.bpool = await BPool.at(await this.core.bpool())
     assert.equal(await this.bpool.balanceOf(this.core.address), toWei('100'))
@@ -55,10 +37,14 @@ contract("DefiDollarCore", accounts => {
 
   it('mintExactIn', async function() {
     const reserve = this.reserves[0]
-    const tokenAmountIn = toWei('20')
     const initialBalance = await this.defiDollarToken.balanceOf(admin)
+
+    const tokenAmountIn = toWei('20')
+    await reserve.mint(admin, tokenAmountIn)
+    await reserve.approve(this.core.address, tokenAmountIn)
     const poolAmountOut = await this.core.mintExactIn.call(reserve.address, tokenAmountIn, 0, admin)
     await this.core.mintExactIn(reserve.address, tokenAmountIn, 0, admin)
+
     const finalBalance = await this.defiDollarToken.balanceOf(admin)
     assert.equal(finalBalance.toString(), initialBalance.add(poolAmountOut).toString())
     // console.log(fromWei(finalBalance))
@@ -66,14 +52,18 @@ contract("DefiDollarCore", accounts => {
 
   it('mintExactOut', async function() {
     const reserve = this.reserves[1]
-    const poolAmountOut = toBN(toWei('10')) // each poolToken is worth approx $2
-    const initialBalance = await this.defiDollarToken.balanceOf(admin)
-    const initialReserveBalance = await reserve.balanceOf(admin)
+    const poolAmountOut = toBN(toWei('10'))
+
     // maxAmountIn is a little greater than what poolAmountOut pool tokens will be worth
     const maxAmountIn = toWei('25')
-    const tokenAmountIn = await this.core.mintExactOut.call(reserve.address, poolAmountOut, maxAmountIn, admin)
+    await reserve.mint(admin, maxAmountIn)
+    await reserve.approve(this.core.address, maxAmountIn)
+    const initialBalance = await this.defiDollarToken.balanceOf(admin)
 
+    const initialReserveBalance = await reserve.balanceOf(admin)
+    const tokenAmountIn = await this.core.mintExactOut.call(reserve.address, poolAmountOut, maxAmountIn, admin)
     await this.core.mintExactOut(reserve.address, poolAmountOut, maxAmountIn, admin)
+
     const finalBalance = await this.defiDollarToken.balanceOf(admin)
     const finalReserveBalance = await reserve.balanceOf(admin)
     assert.equal(finalBalance.toString(), initialBalance.add(poolAmountOut).toString())
@@ -99,7 +89,6 @@ contract("DefiDollarCore", accounts => {
     const reserve = this.reserves[1]
     const tokenAmountOut = toBN(toWei('13'))
     const initialBalance = await this.defiDollarToken.balanceOf(admin)
-    // console.log(fromWei(initialBalance))
     const initialReserveBalance = await reserve.balanceOf(admin)
     const poolAmountIn = await this.core.redeemExactOut.call(reserve.address, tokenAmountOut, MAX)
 
@@ -108,7 +97,6 @@ contract("DefiDollarCore", accounts => {
     const finalReserveBalance = await reserve.balanceOf(admin)
     assert.equal(finalBalance.toString(), initialBalance.sub(poolAmountIn).toString())
     assert.equal(finalReserveBalance.toString(), initialReserveBalance.add(tokenAmountOut).toString())
-    // console.log(fromWei(finalBalance))
   })
 
   it('swapExactAmountOut', async function() {
