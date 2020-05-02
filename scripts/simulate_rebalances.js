@@ -38,8 +38,8 @@ async function runSimulation() {
 
   // const coins = ['usd-coin', 'tether']
   // const coins = ['usd-coin', 'true-usd']
-  // const coins = ['dai', 'usd-coin']
-  const coins = ['dai', 'nusd']
+  const coins = ['dai', 'usd-coin']
+  // const coins = ['dai', 'nusd']
   const data = {}
   const deviations = { dusd: 0 }
   for (let i = 0; i < coins.length; i++) {
@@ -54,64 +54,16 @@ async function runSimulation() {
   let profit = 0
   await this.aTokens[0].approve(this.bpool.address, MAX, { from: user1 })
   await this.aTokens[1].approve(this.bpool.address, MAX, { from: user1 })
-  let mp1 = 0, mp2 = 0, m1 = 2, m2 = 2
   for (let i = 0; i < numPricePoints; i++) {
-    deviations[coins[0]] += Math.abs(data[coins[0]][i][1] - 1)
-    deviations[coins[1]] += Math.abs(data[coins[1]][i][1] - 1)
-    m1 = Math.min(m1, data[coins[0]][i][1])
-    m2 = Math.min(m2, data[coins[1]][i][1])
-    const _prices = [ data[coins[0]][i][1], data[coins[1]][i][1] ]
-    const poolSize_0 = parseFloat(fromWei(await this.aTokens[0].balanceOf(this.bpool.address)))
-    const poolSize_1 = parseFloat(fromWei(await this.aTokens[1].balanceOf(this.bpool.address)))
-    const spotPriceOf_0_1 = poolSize_1 / poolSize_0
-    const newSpotPriceOf_0_1 = data[coins[0]][i][1] / data[coins[1]][i][1]
-    let desiredSpotRatio = newSpotPriceOf_0_1 / spotPriceOf_0_1
-    let tokenIn = 1
-    let tokenOut = 0
-    if (desiredSpotRatio == 1) continue;
-    if (desiredSpotRatio < 1) {
-      tokenIn = 0
-      tokenOut = 1
-      desiredSpotRatio = 1 / desiredSpotRatio
-    }
-    const tokenInPoolSize = weiToFloatEther(await this.aTokens[tokenIn].balanceOf(this.bpool.address))
-    let tokenAmountIn = tokenInPoolSize * (Math.sqrt(desiredSpotRatio) - 1)
-    if (tokenAmountIn > tokenInPoolSize / 2) { // to avoid ERR_MAX_IN_RATIO
-      tokenAmountIn = tokenInPoolSize / 2
-    }
-    const tokenInBalance = weiToFloatEther(await this.aTokens[tokenIn].balanceOf(user1))
-    if (tokenInBalance < tokenAmountIn) {
-      await this.aTokens[tokenIn].mint(user1, floatToWei(tokenAmountIn - tokenInBalance + 1), { from: admin })
-    }
-    let { tokenAmountOut } = await this.bpool.swapExactAmountIn.call(
-      this.aTokens[tokenIn].address,
-      floatToWei(tokenAmountIn),
-      this.aTokens[tokenOut].address,
-      0, // minAmountOut
-      MAX, // maxPrice
-      { from: user1 }
-    )
-    await this.bpool.swapExactAmountIn(
-      this.aTokens[tokenIn].address,
-      floatToWei(tokenAmountIn),
-      this.aTokens[tokenOut].address,
-      0, // minAmountOut
-      MAX, // maxPrice
-      { from: user1 }
-    )
-    tokenAmountOut = weiToFloatEther(tokenAmountOut)
-    const _profit = tokenAmountOut * _prices[tokenOut] - tokenAmountIn * _prices[tokenIn]
-    profit += _profit
-
     for (let j = 0; j < this.numReserves; j++) {
       await this.aggregators[j].setLatestAnswer(floatToWei(data[coins[j]][i][1]))
     }
-    console.log('rebalancing...')
-    const rebalance = await this.core.reBalance()
-    // console.log(rebalance, rebalance.logs[1].args[3])
-    // for (let k = 0; k < 3; k++) {
-    //   console.log(weiToFloatEther(rebalance.logs[1].args[k]))
-    // }
+    await this.core.reBalance()
+    const _prices = [ data[coins[0]][i][1], data[coins[1]][i][1] ]
+    const poolSize_0 = parseFloat(fromWei(await this.aTokens[0].balanceOf(this.bpool.address)))
+    const poolSize_1 = parseFloat(fromWei(await this.aTokens[1].balanceOf(this.bpool.address)))
+    deviations[coins[0]] += Math.abs(data[coins[0]][i][1] - 1)
+    deviations[coins[1]] += Math.abs(data[coins[1]][i][1] - 1)
     const newCoinValue = await getCoinValue(
       _prices,
       this.aTokens,
@@ -119,11 +71,9 @@ async function runSimulation() {
       weiToFloatEther(await this.defiDollarToken.totalSupply())
     )
     deviations.dusd += Math.abs(newCoinValue - 1)
-    console.log(i, { _prices, poolSize_0, poolSize_1, tokenIn, tokenOut, desiredSpotRatio, tokenInPoolSize, tokenAmountIn, tokenAmountOut, _profit, newCoinValue })
-    mp1 = Math.max(mp1, poolSize_0)
-    mp2 = Math.max(mp2, poolSize_1)
+    console.log(i, { _prices, poolSize_0, poolSize_1, newCoinValue })
   }
-  console.log({ deviations, profit, mp1, mp2 })
+  console.log({ deviations, profit })
 }
 
 async function getCoinValue(prices, aTokens, bpool, supply) {
@@ -131,7 +81,6 @@ async function getCoinValue(prices, aTokens, bpool, supply) {
   for (let i = 0; i < prices.length; i++) {
     const poolSize = weiToFloatEther(await aTokens[i].balanceOf(bpool))
     value += (poolSize * prices[i])
-    // console.log({ poolSize, price: prices[i], value, supply })
   }
   return value / supply
 }

@@ -7,8 +7,6 @@ const DefiDollarCore = artifacts.require("DefiDollarCore");
 const DefiDollarToken = artifacts.require("DefiDollarToken");
 const Reserve = artifacts.require("Reserve");
 const MockIAToken = artifacts.require("MockIAToken");
-const Oracle = artifacts.require("Oracle");
-const Aggregator = artifacts.require("MockAggregator");
 
 const toWei = web3.utils.toWei;
 const fromWei = web3.utils.fromWei;
@@ -25,26 +23,22 @@ async function runSimulation() {
   this.bFactory = await BFactory.deployed()
   this.defiDollarToken = await DefiDollarToken.deployed()
   this.numReserves = await this.core.numReserves()
-  this.oracle = await Oracle.at(await this.core.oracle())
   this.reserves = []
   this.aTokens = []
-  this.aggregators = []
   for (let i = 0; i < this.numReserves; i++) {
     this.reserves.push(await Reserve.at(await this.core.reserves(i)))
     this.aTokens.push(await MockIAToken.at(await this.core.reserveToAtoken(this.reserves[i].address)))
-    await this.aTokens[i].mint(this.core.address, toWei('100000'), { from: admin })
-    this.aggregators.push(await Aggregator.at(await this.oracle.refs(i)))
   }
 
   // const coins = ['usd-coin', 'tether']
-  // const coins = ['usd-coin', 'true-usd']
+  const coins = ['usd-coin', 'true-usd']
   // const coins = ['dai', 'usd-coin']
-  const coins = ['dai', 'nusd']
+  // const coins = ['dai', 'nusd']
   const data = {}
   const deviations = { dusd: 0 }
   for (let i = 0; i < coins.length; i++) {
     const id = coins[i]
-    data[id] = JSON.parse(fs.readFileSync(`./data/coingecko/${id}.json`)).prices//.slice(0, 5)
+    data[id] = JSON.parse(fs.readFileSync(`./data/coingecko/${id}.json`)).prices //.slice(0, 5)
     deviations[id] = 0
   }
 
@@ -54,12 +48,7 @@ async function runSimulation() {
   let profit = 0
   await this.aTokens[0].approve(this.bpool.address, MAX, { from: user1 })
   await this.aTokens[1].approve(this.bpool.address, MAX, { from: user1 })
-  let mp1 = 0, mp2 = 0, m1 = 2, m2 = 2
   for (let i = 0; i < numPricePoints; i++) {
-    deviations[coins[0]] += Math.abs(data[coins[0]][i][1] - 1)
-    deviations[coins[1]] += Math.abs(data[coins[1]][i][1] - 1)
-    m1 = Math.min(m1, data[coins[0]][i][1])
-    m2 = Math.min(m2, data[coins[1]][i][1])
     const _prices = [ data[coins[0]][i][1], data[coins[1]][i][1] ]
     const poolSize_0 = parseFloat(fromWei(await this.aTokens[0].balanceOf(this.bpool.address)))
     const poolSize_1 = parseFloat(fromWei(await this.aTokens[1].balanceOf(this.bpool.address)))
@@ -83,6 +72,8 @@ async function runSimulation() {
     if (tokenInBalance < tokenAmountIn) {
       await this.aTokens[tokenIn].mint(user1, floatToWei(tokenAmountIn - tokenInBalance + 1), { from: admin })
     }
+    deviations[coins[0]] += Math.abs(data[coins[0]][i][1] - 1)
+    deviations[coins[1]] += Math.abs(data[coins[1]][i][1] - 1)
     let { tokenAmountOut } = await this.bpool.swapExactAmountIn.call(
       this.aTokens[tokenIn].address,
       floatToWei(tokenAmountIn),
@@ -102,16 +93,6 @@ async function runSimulation() {
     tokenAmountOut = weiToFloatEther(tokenAmountOut)
     const _profit = tokenAmountOut * _prices[tokenOut] - tokenAmountIn * _prices[tokenIn]
     profit += _profit
-
-    for (let j = 0; j < this.numReserves; j++) {
-      await this.aggregators[j].setLatestAnswer(floatToWei(data[coins[j]][i][1]))
-    }
-    console.log('rebalancing...')
-    const rebalance = await this.core.reBalance()
-    // console.log(rebalance, rebalance.logs[1].args[3])
-    // for (let k = 0; k < 3; k++) {
-    //   console.log(weiToFloatEther(rebalance.logs[1].args[k]))
-    // }
     const newCoinValue = await getCoinValue(
       _prices,
       this.aTokens,
@@ -120,10 +101,8 @@ async function runSimulation() {
     )
     deviations.dusd += Math.abs(newCoinValue - 1)
     console.log(i, { _prices, poolSize_0, poolSize_1, tokenIn, tokenOut, desiredSpotRatio, tokenInPoolSize, tokenAmountIn, tokenAmountOut, _profit, newCoinValue })
-    mp1 = Math.max(mp1, poolSize_0)
-    mp2 = Math.max(mp2, poolSize_1)
   }
-  console.log({ deviations, profit, mp1, mp2 })
+  console.log({ deviations, profit })
 }
 
 async function getCoinValue(prices, aTokens, bpool, supply) {

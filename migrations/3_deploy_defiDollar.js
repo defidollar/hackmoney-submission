@@ -5,8 +5,10 @@ const aToken = artifacts.require("MockIAToken");
 const BFactory = artifacts.require('BFactory');
 const BPool = artifacts.require('BPool');
 const Reserve = artifacts.require("Reserve");
+const Oracle = artifacts.require("Oracle");
+const Aggregator = artifacts.require("MockAggregator");
 
-const NUM_RESERVES = 2;
+const NUM_RESERVES = parseInt(process.env.NUM_RESERVES) || 2;
 
 module.exports = async function (deployer, network, accounts) {
   const reserves = []
@@ -14,35 +16,38 @@ module.exports = async function (deployer, network, accounts) {
   for (let i = 0; i < NUM_RESERVES; i++) {
     reserves.push(await Reserve.new())
   }
+
+  const aggregators = []
   const lendingPool = await LendingPool.new(reserves.map(r => r.address))
   for (let i = 0; i < NUM_RESERVES; i++) {
     aTokens.push(await aToken.at(await lendingPool.rToA(reserves[i].address)))
+    aggregators.push(await Aggregator.new())
   }
+
+  await deployer.deploy(Oracle, aggregators.map(a => a.address))
+  const oracle = await Oracle.deployed()
 
   await deployer.deploy(DefiDollarCore,
     reserves.map(r => r.address),
     aTokens.map(r => r.address),
     lendingPool.address,
-    lendingPool.address // core, doesn't matter for mocks
+    lendingPool.address, // lendingPoolCore actually, but doesn't matter for mocks
+    oracle.address
   );
   const core = await DefiDollarCore.deployed()
   await deployer.deploy(DefiDollarToken, core.address)
   const defiDollarToken = await DefiDollarToken.deployed()
 
   // initialize core
+  const amount = web3.utils.toWei(process.env.INITIAL_AMOUNT || '50') // of each
   const admin = accounts[0]
-  for (let i = 0; i < this.numReserves; i++) {
-    reserves.push(await Reserve.at(await this.core.reserves(i)))
-  }
-  // const amount = web3.utils.toWei('500000') // of each
-  const amount = web3.utils.toWei('50') // of each
   const balances = []
   const denorm = []
   for (let i = 0; i < NUM_RESERVES; i++) {
     await reserves[i].mint(admin, amount)
     await reserves[i].approve(core.address, amount)
     balances.push(amount)
-    denorm.push(web3.utils.toWei('25')) // Required %age share / 2
+    denorm.push(web3.utils.toWei('10')) // giving equal weight to each coin
   }
   const bFactory = await BFactory.deployed()
   await core.initialize(
@@ -51,14 +56,4 @@ module.exports = async function (deployer, network, accounts) {
     balances,
     denorm
   )
-
-  // const aTokens = []
-  // const bpool = await BPool.at(await core.bpool())
-  // for (let i = 0; i < NUM_RESERVES; i++) {
-  //   aTokens.push(await MockIAToken.at(this.reserves[i].address))
-  // }
-  // console.log(
-  //   await aTokens[0].balanceOf(bpool.address),
-  //   await aTokens[1].balanceOf(bpool.address)
-  // )
 };

@@ -4,5 +4,5 @@
 truffle compile
 truffle migrate --reset
 truffle test
-truffle exec scripts/simulate.js
+INITIAL_AMOUNT=500000 truffle migrate --reset && truffle exec scripts/simulate.js
 ```
