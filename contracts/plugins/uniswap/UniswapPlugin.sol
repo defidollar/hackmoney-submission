@@ -3,20 +3,105 @@ pragma solidity ^0.5.12;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { IUniswap } from "./IUniswap.sol";
-import { Core } from "../../Core.sol";
+import { AavePlugin } from "../aave/AavePlugin.sol";
+import { Pool } from "../../Pool.sol";
 
-contract UniswapConnector {
-  // IUniswap public uniswap;
-  // Core public defiDollarCore;
-  // DefiDollarToken public token;
+contract UniswapPlugin {
+  IUniswap public uniswap;
+  AavePlugin public aave;
+  Pool public pool;
 
-  // uint256 public constant UINT_MAX_VALUE = uint256(-1);
+  uint256 public constant UINT_MAX_VALUE = uint256(-1);
 
-  // constructor(address _defiDollarCore, address _defiDollarToken, address _uniswap) public {
-  //   defiDollarCore = Core(_defiDollarCore);
-  //   token = DefiDollarToken(_defiDollarToken);
-  //   uniswap = IUniswap(_uniswap);
-  // }
+  constructor(
+    IUniswap _uniswap,
+    AavePlugin _aave,
+    Pool _pool)
+    public
+  {
+    uniswap = _uniswap;
+    aave = _aave;
+    pool = _pool;
+  }
+
+  function mintExactIn(
+    address tokenIn,
+    uint256 tokenAmountIn,
+    uint minPoolAmountOut,
+    address intermediateReserveToken)
+    external
+    returns(uint poolAmountOut)
+  {
+    require(
+      IERC20(tokenIn).transferFrom(msg.sender, address(this), tokenAmountIn),
+      "In token transfer failed"
+    );
+    uint _tokenAmountIn = tokenAmountIn;
+    if (tokenIn != intermediateReserveToken) {
+      IERC20(tokenIn).approve(address(uniswap), tokenAmountIn);
+      address[] memory path = new address[](2);
+      path[0] = tokenIn;
+      path[1] = intermediateReserveToken;
+      // even with amountOutMin == 0, final assertion will take care of the slippage check
+      uint[] memory amounts = uniswap.swapExactTokensForTokens(
+        tokenAmountIn,
+        0, // amountOutMin
+        path,
+        address(this), // to
+        UINT_MAX_VALUE // deadline
+      );
+      _tokenAmountIn = amounts[1];
+    }
+    require(
+      IERC20(intermediateReserveToken).approve(address(aave), _tokenAmountIn),
+      "Approval to aave failed"
+    );
+    // provide minPoolAmountOut == 0 and assert on the quantity later
+    poolAmountOut = aave.mintExactIn(intermediateReserveToken, _tokenAmountIn, 0 /* minPoolAmountOut */);
+    require(
+      poolAmountOut >= minPoolAmountOut,
+      "Too much slippage"
+    );
+    pool.transfer(msg.sender, poolAmountOut);
+  }
+
+  function redeemExact(
+    uint poolAmountIn,
+    address tokenOut,
+    uint minTokenAmountOut,
+    address intermediateReserveToken)
+    external
+    returns(uint tokenAmountOut)
+  {
+    require(
+      pool.transferFrom(msg.sender, address(this), poolAmountIn),
+      "Pool token transfer failed"
+    );
+    require(
+      pool.approve(address(aave), poolAmountIn),
+      "Approval to aave failed"
+    );
+    tokenAmountOut = aave.redeemExact(poolAmountIn, intermediateReserveToken, 0 /* minTokenAmountOut */);
+    if (tokenOut != intermediateReserveToken) {
+      address[] memory path = new address[](2);
+      path[0] = intermediateReserveToken;
+      path[1] = tokenOut;
+      IERC20(intermediateReserveToken).approve(address(uniswap), tokenAmountOut);
+      uint[] memory amounts = uniswap.swapExactTokensForTokens(
+        tokenAmountOut,
+        0, // amountOutMin
+        path,
+        address(this), // to
+        UINT_MAX_VALUE // deadline
+      );
+      tokenAmountOut = amounts[1];
+    }
+    require(
+      tokenAmountOut >= minTokenAmountOut,
+      "Too much slippage"
+    );
+    IERC20(tokenOut).transfer(msg.sender, tokenAmountOut);
+  }
 
   // /**
   // * @notice Mint a specific amount of DefiDollars

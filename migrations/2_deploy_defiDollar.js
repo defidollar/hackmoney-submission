@@ -8,6 +8,8 @@ const BFactory = artifacts.require('BFactory');
 
 const Core = artifacts.require("Core");
 const AavePlugin = artifacts.require("AavePlugin");
+const UniswapPlugin = artifacts.require("UniswapPlugin");
+const MockUniswap = artifacts.require("MockUniswap");
 const Reserve = artifacts.require("Reserve");
 const Oracle = artifacts.require("Oracle");
 const Aggregator = artifacts.require("MockAggregator");
@@ -16,6 +18,7 @@ const Pool = artifacts.require('Pool');
 const NUM_RESERVES = parseInt(process.env.NUM_RESERVES) || 2;
 
 module.exports = async function (deployer, network, accounts) {
+  console.log('running migrations...')
   const admin = accounts[0]
 
   // Deploy erc20 reserves
@@ -54,7 +57,7 @@ module.exports = async function (deployer, network, accounts) {
     (new Array(NUM_RESERVES)).fill(weight) // endWeights
   );
   const pool = await Pool.deployed()
-  
+
   for (let i = 0; i < NUM_RESERVES; i++) {
     await aTokens[i].mint(admin, amount)
     await aTokens[i].approve(pool.address, amount)
@@ -82,6 +85,15 @@ module.exports = async function (deployer, network, accounts) {
     lendingPool.address,
     lendingPool.address, // _aaveLendingPoolCore but it is irrelevant here
     Core.address,
+    pool.address
+  )
+
+  // Deploy Uniswap
+  await deployer.deploy(MockUniswap)
+  await deployer.deploy(
+    UniswapPlugin,
+    MockUniswap.address,
+    AavePlugin.address,
     pool.address
   )
 };
