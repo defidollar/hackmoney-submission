@@ -38,7 +38,8 @@ module.exports = async function (deployer, network, accounts) {
   // console.log({aTokens: aTokens.map(a => a.address)})
 
   // Deploy actual oracle
-  await deployer.deploy(Oracle, aggregators.map(a => a.address))
+  const ethUsdAgg = await Aggregator.new()
+  await deployer.deploy(Oracle, aggregators.map(a => a.address), ethUsdAgg.address)
   const oracle = await Oracle.deployed()
 
   // Deploy Balancer things
@@ -84,7 +85,7 @@ module.exports = async function (deployer, network, accounts) {
     aTokens.map(r => r.address),
     lendingPool.address,
     lendingPool.address, // _aaveLendingPoolCore but it is irrelevant here
-    Core.address,
+    core.address,
     pool.address
   )
 

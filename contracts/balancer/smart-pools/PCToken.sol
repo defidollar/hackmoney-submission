@@ -13,29 +13,11 @@
 
 pragma solidity 0.5.12;
 
+import { ERC20Detailed } from "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Highly opinionated token implementation
-
-interface IERC20 {
-    event Approval(address indexed src, address indexed dst, uint amt);
-    event Transfer(address indexed src, address indexed dst, uint amt);
-
-    function totalSupply() external view returns (uint);
-    function balanceOf(address whom) external view returns (uint);
-    function allowance(address src, address dst) external view returns (uint);
-
-    function approve(address dst, uint amt) external returns (bool);
-    function transfer(address dst, uint amt) external returns (bool);
-    function transferFrom(
-        address src, address dst, uint amt
-    ) external returns (bool);
-}
-
-contract PCToken is IERC20 {
-    string  public constant NAME     = "Balancer Smart Pool";
-    string  public constant SYMBOL   = "BSP";
-    uint8   public constant DECIMALS = 18;
-
+contract PCToken is ERC20Detailed {
     uint internal _totalSupply;
 
     mapping(address => uint)                   private _balance;
@@ -55,6 +37,9 @@ contract PCToken is IERC20 {
     uint public constant MAX_BALANCE       = BONE * 10**12;
 
     uint public constant MIN_POOL_SUPPLY   = BONE;
+
+    constructor()
+    public ERC20Detailed("DefiDollar", "DUSD", 18) {}
 
     function badd(uint a, uint b)
         internal pure
