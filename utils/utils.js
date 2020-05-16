@@ -11,7 +11,6 @@ async function getArtifacts(artifacts, options) {
   const IAToken = artifacts.require("MockIAToken");
   const Aggregator = artifacts.require("MockAggregator");
   const Oracle = artifacts.require("Oracle");
-
   if (!_artifacts) {
     _artifacts = {
       core: await Core.deployed(),
@@ -23,7 +22,7 @@ async function getArtifacts(artifacts, options) {
     _artifacts.pool = await Pool.at(await _artifacts.core.pool())
     _artifacts.bpool = await BPool.at(await _artifacts.pool._bPool())
     _artifacts.oracle = await Oracle.at(await _artifacts.core.oracle())
-
+    _artifacts.ethAggregator = await Aggregator.at(await _artifacts.oracle.ethUsdAggregator())
     const numReserves = await _artifacts.core.numReserves()
     for (let i = 0; i < numReserves; i++) {
       _artifacts.reserves.push(await Reserve.at(await _artifacts.core.reserves(i)))

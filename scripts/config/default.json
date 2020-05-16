@@ -32,10 +32,18 @@
       "bFactory": "0x8f7F78080219d4066A8036ccD30D588B416a40DB"
     },
     "defidollar": {
-      "oracle": "0xF611a7cf6211a2d2611756ec5992DE555c63a030",
-      "pool": "0x0DB6fcc375D9D117ef989203AdfC2D622C9fc736",
-      "core": "0x0925C74886eF92a3A21040eA45B3CB08ac0c04c8",
-      "aave": "0xA30C5162bb9AB9655e663aBbE76481d488297e47"
+      "alpha1": {
+        "oracle": "0xF611a7cf6211a2d2611756ec5992DE555c63a030",
+        "pool": "0x0DB6fcc375D9D117ef989203AdfC2D622C9fc736",
+        "core": "0x0925C74886eF92a3A21040eA45B3CB08ac0c04c8",
+        "aave": "0xA30C5162bb9AB9655e663aBbE76481d488297e47",
+        "bpool": "0xeCf02Dcb2552D1f427F132974361cAa06d82cA7e"
+      },
+      "oracle": "0x8eDc618e4Ae8e3878592e8F9cA5947F57a7CeF53",
+      "bpool": "0xe3605cF5b1CD9dBC5bD4AcaE3660dc3919477B9c",
+      "pool": "0x592DD54B31a3F000d67Fd4907245692654e49ae9",
+      "core": "0xE81a737290A8b0BEb19218DC6Bf9514351cf40b6",
+      "aave": "0x33960cBbBbb77b21EEEC0cc48067cD417969F32f"
     }
   }
 }
