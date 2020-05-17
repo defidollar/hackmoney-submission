@@ -1,0 +1,19 @@
+{
+  "contracts": {
+    "tokens": {
+      "DAI": "0xFf795577d9AC8bD7D90Ee22b6C1703490b6512FD",
+      "TUSD": "0x1c4a937d171752e1313D70fb16Ae2ea02f86303e"
+    },
+    "aave": {
+      "aDAI": "0x58AD4cB396411B691A9AAb6F74545b2C5217FE6a",
+      "aTUSD": "0xA79383e0d2925527ba5Ec1c1bcaA13c28EE00314"
+    },
+    "defidollar": {
+      "oracle": "0x8eDc618e4Ae8e3878592e8F9cA5947F57a7CeF53",
+      "bpool": "0xe3605cF5b1CD9dBC5bD4AcaE3660dc3919477B9c",
+      "pool": "0x592DD54B31a3F000d67Fd4907245692654e49ae9",
+      "core": "0xE81a737290A8b0BEb19218DC6Bf9514351cf40b6",
+      "aave": "0x33960cBbBbb77b21EEEC0cc48067cD417969F32f"
+    }
+  }
+}

@@ -62,6 +62,34 @@ contract Pool is LiquidityBootstrappingPool {
     );
   }
 
+  function calcPoolOutGivenSingleIn(address tokenIn, uint tokenAmountIn)
+    public view
+    returns (uint /* poolAmountOut */)
+  {
+    return _bPool.calcPoolOutGivenSingleIn(
+      _bPool.getBalance(tokenIn),
+      _bPool.getDenormalizedWeight(tokenIn),
+      _totalSupply,
+      _bPool.getTotalDenormalizedWeight(),
+      tokenAmountIn,
+      _swapFee
+    );
+  }
+
+  function calcSingleOutGivenPoolIn(address tokenOut, uint poolAmountIn)
+    public view
+    returns (uint /* tokenAmountOut */)
+  {
+    return _bPool.calcSingleOutGivenPoolIn(
+      _bPool.getBalance(tokenOut),
+      _bPool.getDenormalizedWeight(tokenOut),
+      _totalSupply,
+      _bPool.getTotalDenormalizedWeight(),
+      poolAmountIn,
+      _swapFee
+    );
+  }
+
   function rebind(address token, uint balance, uint denorm)
     public
     _onlyController_

@@ -1,4 +1,5 @@
 const assert = require('assert')
+const fs = require('fs')
 
 const MockLendingPool = artifacts.require("MockLendingPool");
 const aToken = artifacts.require("MockIAToken");
@@ -21,11 +22,14 @@ const NUM_RESERVES = parseInt(process.env.NUM_RESERVES) || 2;
 module.exports = async function (deployer, network, accounts) {
   console.log('running migrations...')
   const admin = accounts[0]
+  const contracts = { tokens: {}, aave: {}, defidollar: {} }
 
   // Deploy erc20 reserves
   const reserves = []
   for (let i = 0; i < NUM_RESERVES; i++) {
     reserves.push(await Reserve.new())
+    contracts.tokens[`TOK${i}`] = reserves[i].address
+    await reserves[i].mint(admin, web3.utils.toWei('100'))
   }
 
   // Deploy ATokens and oracle price aggregators
@@ -34,6 +38,7 @@ module.exports = async function (deployer, network, accounts) {
   const lendingPool = await MockLendingPool.new(reserves.map(r => r.address))
   for (let i = 0; i < NUM_RESERVES; i++) {
     aTokens.push(await aToken.at(await lendingPool.rToA(reserves[i].address)))
+    contracts.aave[`aTOK${i}`] = aTokens[i].address
     aggregators.push(await Aggregator.new())
   }
   // console.log({aTokens: aTokens.map(a => a.address)})
@@ -48,6 +53,7 @@ module.exports = async function (deployer, network, accounts) {
   // await deployer.deploy(BFactory);
   await deployer.deploy(BPool);
   const bPool = await BPool.deployed()
+  contracts.defidollar.bpool = bPool.address
 
   // Balancer Pool
   const amount = web3.utils.toWei(process.env.INITIAL_AMOUNT || '50') // of each
@@ -63,6 +69,7 @@ module.exports = async function (deployer, network, accounts) {
   );
   const pool = await Pool.deployed()
   bPool.setController(pool.address)
+  contracts.defidollar.pool = pool.address
 
   for (let i = 0; i < NUM_RESERVES; i++) {
     await aTokens[i].mint(admin, amount)
@@ -82,6 +89,7 @@ module.exports = async function (deployer, network, accounts) {
   );
   const core = await Core.deployed()
   await pool.setController(core.address)
+  contracts.defidollar.core = core.address
 
   // Deploy Aave
   await deployer.deploy(
@@ -93,6 +101,8 @@ module.exports = async function (deployer, network, accounts) {
     core.address,
     pool.address
   )
+  contracts.defidollar.aave = AavePlugin.address
+  fs.writeFileSync('./addresses.json', JSON.stringify({ contracts }, null, 2))
 
   // Deploy Uniswap
   await deployer.deploy(MockUniswap)
