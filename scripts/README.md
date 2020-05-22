@@ -31,3 +31,24 @@ INITIAL_AMOUNT=50000 truffle migrate --reset && truffle exec scripts/simulate.js
   mp1: 51539.28556499885,
   mp2: 59770.47750485338 }
 ```
+
+Newest
+```
+{ deviations:
+   { dusd: 1.660823984670144,
+     dai: 1.3879218964838727,
+     nusd: 2.962608757300444 },
+  profit: 205.4201867998646,
+  maxPoolSize1: 5343.737016229948,
+  maxPoolSize2: 5833.432132827918 }
+```
+
+```
+{ deviations:
+   { dusd: 1.1771590903883487,
+     dai: 1.3879218964838727,
+     nusd: 2.962608757300444 },
+  profit: 204.50580773226955,
+  maxPoolSize1: 5267.671333228876,
+  maxPoolSize2: 5832.937804168374 }
+```

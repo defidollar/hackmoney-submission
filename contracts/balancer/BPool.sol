@@ -740,4 +740,21 @@ contract BPool is BBronze, BToken, BMath {
         _burn(amount);
     }
 
+    // added functions
+    function calcOutGivenIn(address tokenIn, uint tokenAmountIn, address tokenOut)
+        public view
+        returns (uint /* tokenAmountOut */)
+    {
+        Record storage inRecord = _records[address(tokenIn)];
+        Record storage outRecord = _records[address(tokenOut)];
+        return calcOutGivenIn(
+            inRecord.balance,
+            inRecord.denorm,
+            outRecord.balance,
+            outRecord.denorm,
+            tokenAmountIn,
+            _swapFee
+        );
+    }
+
 }

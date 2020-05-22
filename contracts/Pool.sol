@@ -34,6 +34,31 @@ contract Pool is LiquidityBootstrappingPool {
 
   }
 
+  function rebind(address token, uint balance, uint denorm)
+    public
+    _onlyController_
+  {
+    _bPool.rebind(token, balance, denorm);
+    IERC20 erc20 = IERC20(token);
+    // send any residue tokens to core
+    uint256 residueBalance = erc20.balanceOf(address(this));
+    if (residueBalance > 0) {
+      erc20.transfer(_controller, residueBalance);
+    }
+  }
+
+  function setController(address manager)
+    public
+    /* ACL is managed by super.setController */
+  {
+    super.setController(manager);
+    address[] memory tokens = _bPool.getCurrentTokens();
+    for (uint8 i = 0; i < tokens.length; i++) {
+      IAToken(tokens[i]).redirectInterestStreamOf(address(_bPool), manager);
+    }
+  }
+
+  // UI helper functions
   function calcSingleInGivenPoolOut(uint poolAmountOut, address tokenIn)
     public view
     returns (uint /* tokenAmountIn */)
@@ -88,29 +113,5 @@ contract Pool is LiquidityBootstrappingPool {
       poolAmountIn,
       _swapFee
     );
-  }
-
-  function rebind(address token, uint balance, uint denorm)
-    public
-    _onlyController_
-  {
-    _bPool.rebind(token, balance, denorm);
-    IERC20 erc20 = IERC20(token);
-    // send any residue tokens to core
-    uint256 residueBalance = erc20.balanceOf(address(this));
-    if (residueBalance > 0) {
-      erc20.transfer(_controller, residueBalance);
-    }
-  }
-
-  function setController(address manager)
-    public
-    /* ACL is managed by super.setController */
-  {
-    super.setController(manager);
-    address[] memory tokens = _bPool.getCurrentTokens();
-    for (uint8 i = 0; i < tokens.length; i++) {
-      IAToken(tokens[i]).redirectInterestStreamOf(address(_bPool), manager);
-    }
   }
 }

@@ -4,7 +4,11 @@
 npm run compile
 npm run migrate
 npm test
-INITIAL_AMOUNT=50000 truffle migrate --reset && truffle exec scripts/simulate.js
+```
+
+### Rum simulation
+```
+INITIAL_AMOUNT=5000 truffle migrate --reset && truffle exec scripts/simulate.js
 ```
 
 ### Deploy to Kovan

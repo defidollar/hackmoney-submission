@@ -24,21 +24,25 @@ module.exports = async function (deployer, network, accounts) {
   const admin = accounts[0]
   const contracts = { tokens: {}, aave: {}, defidollar: {} }
 
+  const initialAmount = web3.utils.toWei('100')
+  const tokenTicker = ['DAI', 'TUSD']
+
   // Deploy erc20 reserves
   const reserves = []
   for (let i = 0; i < NUM_RESERVES; i++) {
     reserves.push(await Reserve.new())
-    contracts.tokens[`TOK${i}`] = reserves[i].address
-    await reserves[i].mint(admin, web3.utils.toWei('100'))
+    contracts.tokens[tokenTicker[i]] = reserves[i].address
+    // contracts.tokens[`TOK${i}`] = reserves[i].address
+    await reserves[i].mint(admin, initialAmount)
   }
 
   // Deploy ATokens and oracle price aggregators
   const aTokens = []
   const aggregators = []
-  const lendingPool = await MockLendingPool.new(reserves.map(r => r.address))
+  const lendingPool = await deployer.deploy(MockLendingPool, reserves.map(r => r.address))
   for (let i = 0; i < NUM_RESERVES; i++) {
     aTokens.push(await aToken.at(await lendingPool.rToA(reserves[i].address)))
-    contracts.aave[`aTOK${i}`] = aTokens[i].address
+    contracts.aave[`a${tokenTicker[i]}`] = aTokens[i].address
     aggregators.push(await Aggregator.new())
   }
   // console.log({aTokens: aTokens.map(a => a.address)})
@@ -72,7 +76,10 @@ module.exports = async function (deployer, network, accounts) {
   contracts.defidollar.pool = pool.address
 
   for (let i = 0; i < NUM_RESERVES; i++) {
-    await aTokens[i].mint(admin, amount)
+    // get atokens in exchange of reserve tokens
+    await reserves[i].approve(lendingPool.address, amount)
+    await lendingPool.deposit(reserves[i].address, amount, 0)
+    // aTokens[i].mint(admin, web3.utils.toWei('1000000000'))
     await aTokens[i].approve(pool.address, amount)
   }
   const initialSupply = web3.utils.toBN(amount).mul(web3.utils.toBN(NUM_RESERVES)) // assuming each coin is $1
