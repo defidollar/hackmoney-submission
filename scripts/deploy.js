@@ -52,7 +52,7 @@ async function execute() {
   }
 
   let pool
-  const amount = web3.utils.toWei('50')
+  const amount = web3.utils.toWei('500')
   const weight = web3.utils.toWei('10') // giving equal weight to each coin
   if (config.has('contracts.defidollar.pool')) {
     pool = await Pool.at(config.get('contracts.defidollar.pool'))
@@ -77,7 +77,7 @@ async function execute() {
       // console.log({ balance: balance.toString(), allowance: allowance.toString() })
     }
     await Promise.all(approvals)
-    console.log('token completed...')
+    console.log('token approvals completed...')
 
     const initialSupply = web3.utils.toBN(amount).mul(web3.utils.toBN(NUM_RESERVES)) // assuming each coin is $1
     await pool.createPool(initialSupply)
@@ -118,11 +118,14 @@ async function execute() {
     console.log('Deployed Aave at:', aave.address)
   }
 
-  // const uniswapPlugin = await UniswapPlugin.new(
-  //   config.get('contracts.uniswap.router'),
-  //   aave.address,
-  //   pool.address
-  // )
+  if (!config.has('contracts.defidollar.uniswapPlugin')) {
+    const uniswapPlugin = await UniswapPlugin.new(
+      config.get('contracts.uniswap.router'),
+      aave.address,
+      pool.address
+    )
+    console.log('Deployed uniswapPlugin at:', uniswapPlugin.address)
+  }
 }
 
 module.exports = async function (callback) {

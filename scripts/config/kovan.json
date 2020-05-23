@@ -2,21 +2,23 @@
   "contracts": {
     "tokens": {
       "DAI": "0xFf795577d9AC8bD7D90Ee22b6C1703490b6512FD",
-      "TUSD": "0x1c4a937d171752e1313D70fb16Ae2ea02f86303e"
+      "TUSD": "0x1c4a937d171752e1313D70fb16Ae2ea02f86303e",
+      "MKR": "0x61e4CAE3DA7FD189e52a4879C7B8067D7C2Cc0FA"
     },
     "aave": {
       "aDAI": "0x58AD4cB396411B691A9AAb6F74545b2C5217FE6a",
       "aTUSD": "0xA79383e0d2925527ba5Ec1c1bcaA13c28EE00314"
     },
-    "defidollar": {
-      "oracle": "0x8eDc618e4Ae8e3878592e8F9cA5947F57a7CeF53",
-      "bpool": "0xe3605cF5b1CD9dBC5bD4AcaE3660dc3919477B9c",
-      "pool": "0x592DD54B31a3F000d67Fd4907245692654e49ae9",
-      "core": "0xE81a737290A8b0BEb19218DC6Bf9514351cf40b6",
-      "aave": "0x33960cBbBbb77b21EEEC0cc48067cD417969F32f"
-    },
     "uniswap": {
       "router": "0xf164fC0Ec4E93095b804a4795bBe1e041497b92a"
+    },
+    "defidollar": {
+      "oracle": "0xC2dF5094D84aad5141f799362Ec2e15B9861c2B3",
+      "bpool": "0xCc6537a2819aaf00A9353a79C88e99cE20CC7dbe",
+      "pool": "0x163C83dAA7a3e0572c4CC160613efb0A092126f9",
+      "core": "0x20c43A77d49cD27a9036E2a8DC5716E9FD7DCa71",
+      "aave": "0x9c8B149F882831915B1c4697930A5D54504bBBbC",
+      "uniswapPlugin": "0xb7E8fc9E547A3ca3B5C6a60b7D36605a201744f4"
     }
   }
 }
