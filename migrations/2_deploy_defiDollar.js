@@ -18,6 +18,7 @@ const Aggregator = artifacts.require("MockAggregator");
 const Pool = artifacts.require('Pool');
 
 const NUM_RESERVES = parseInt(process.env.NUM_RESERVES) || 2;
+const toBN = web3.utils.toBN
 
 module.exports = async function (deployer, network, accounts) {
   console.log('running migrations...')
@@ -25,7 +26,7 @@ module.exports = async function (deployer, network, accounts) {
   const contracts = { tokens: {}, aave: {}, defidollar: {} }
 
   const initialAmount = web3.utils.toWei('100')
-  const tokenTicker = ['DAI', 'TUSD']
+  const tokenTicker = ['DAI', 'TUSD', 'MKR']
 
   // Deploy erc20 reserves
   const reserves = []
@@ -35,20 +36,28 @@ module.exports = async function (deployer, network, accounts) {
     // contracts.tokens[`TOK${i}`] = reserves[i].address
     await reserves[i].mint(admin, initialAmount)
   }
+  const mkr = await Reserve.new()
+  contracts.tokens[tokenTicker[2]] = mkr.address
+  await mkr.mint(admin, initialAmount)
 
   // Deploy ATokens and oracle price aggregators
   const aTokens = []
   const aggregators = []
   const lendingPool = await deployer.deploy(MockLendingPool, reserves.map(r => r.address))
+  const ethPrice = toBN(200)
   for (let i = 0; i < NUM_RESERVES; i++) {
     aTokens.push(await aToken.at(await lendingPool.rToA(reserves[i].address)))
     contracts.aave[`a${tokenTicker[i]}`] = aTokens[i].address
     aggregators.push(await Aggregator.new())
+    // set price = $1 but relative to eth
+    await aggregators[i].setLatestAnswer(toBN(web3.utils.toWei('1')).div(ethPrice))
   }
   // console.log({aTokens: aTokens.map(a => a.address)})
 
   // Deploy actual oracle
   const ethUsdAgg = await Aggregator.new()
+  // The latestAnswer value for all USD reference data contracts is multiplied by 100000000 before being written on-chain and
+  await ethUsdAgg.setLatestAnswer(ethPrice.mul(toBN('100000000')))
   await deployer.deploy(Oracle, aggregators.map(a => a.address), ethUsdAgg.address)
   const oracle = await Oracle.deployed()
 
@@ -77,8 +86,8 @@ module.exports = async function (deployer, network, accounts) {
 
   for (let i = 0; i < NUM_RESERVES; i++) {
     // get atokens in exchange of reserve tokens
-    await reserves[i].approve(lendingPool.address, amount)
-    await lendingPool.deposit(reserves[i].address, amount, 0)
+    await reserves[i].approve(lendingPool.address, web3.utils.toWei('70'))
+    await lendingPool.deposit(reserves[i].address, web3.utils.toWei('70'), 0)
     // aTokens[i].mint(admin, web3.utils.toWei('1000000000'))
     await aTokens[i].approve(pool.address, amount)
   }
@@ -109,7 +118,6 @@ module.exports = async function (deployer, network, accounts) {
     pool.address
   )
   contracts.defidollar.aave = AavePlugin.address
-  fs.writeFileSync('./addresses.json', JSON.stringify({ contracts }, null, 2))
 
   // Deploy Uniswap
   await deployer.deploy(MockUniswap)
@@ -119,4 +127,7 @@ module.exports = async function (deployer, network, accounts) {
     AavePlugin.address,
     pool.address
   )
+  contracts.uniswap = { router: MockUniswap.address }
+  contracts.defidollar.uniswapPlugin = UniswapPlugin.address
+  fs.writeFileSync('./addresses.json', JSON.stringify({ contracts }, null, 2))
 };

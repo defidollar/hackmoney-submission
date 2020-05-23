@@ -44,4 +44,10 @@ contract MockUniswap is IUniswap {
     IERC20(path[0]).transferFrom(msg.sender, address(this), amountIn);
     Reserve(path[1]).mint(to, amountOut);
   }
+
+  function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts) {
+    amounts = new uint[](2);
+    amounts[0] = amountIn;
+    amounts[1] = 2 * amountIn; // dummy exchange rate
+  }
 }

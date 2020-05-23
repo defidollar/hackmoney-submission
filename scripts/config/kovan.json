@@ -14,6 +14,9 @@
       "pool": "0x592DD54B31a3F000d67Fd4907245692654e49ae9",
       "core": "0xE81a737290A8b0BEb19218DC6Bf9514351cf40b6",
       "aave": "0x33960cBbBbb77b21EEEC0cc48067cD417969F32f"
+    },
+    "uniswap": {
+      "router": "0xf164fC0Ec4E93095b804a4795bBe1e041497b92a"
     }
   }
 }
