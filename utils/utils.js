@@ -1,8 +1,8 @@
 let _artifacts
 
 async function getArtifacts(artifacts, options) {
-  const Pool = artifacts.require('Pool');
-  const BPool = artifacts.require('BPool');
+  const Pool = artifacts.require('LBP');
+  const BPool = artifacts.require('ModifiedBPool');
 
   const Core = artifacts.require("Core");
   const AavePlugin = artifacts.require("AavePlugin");

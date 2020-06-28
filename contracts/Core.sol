@@ -2,7 +2,7 @@ pragma solidity ^0.5.12;
 
 import { IAToken } from "./plugins/aave/IAToken.sol";
 import { Oracle } from "./chainlink/Oracle.sol";
-import "./Pool.sol";
+import { LBP as Pool } from "./balancer/LBP.sol";
 import "./balancer/smart-pools/IBFactory.sol";
 
 contract Core {

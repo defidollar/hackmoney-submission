@@ -5,7 +5,7 @@ const fromWei = web3.utils.fromWei;
 const toBN =web3.utils.toBN;
 const MAX = web3.utils.toTwosComplement(-1);
 
-contract("Pool", accounts => {
+contract("LBP", accounts => {
   const admin = accounts[0]
   const user1 = accounts[1]
   let _artifacts

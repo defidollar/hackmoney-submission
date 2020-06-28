@@ -1,11 +1,11 @@
 pragma solidity ^0.5.12;
 
-import "./balancer/smart-pools/LiquidityBootstrappingPool.sol";
-import { IAToken } from "./plugins/aave/IAToken.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract Pool is LiquidityBootstrappingPool {
-  uint public constant MIN_FEE = 10**12;
+import { LiquidityBootstrappingPool } from "./smart-pools/LiquidityBootstrappingPool.sol";
+import { IAToken } from "../plugins/aave/IAToken.sol";
 
+contract LBP is LiquidityBootstrappingPool {
   modifier _onlyController_() {
     require(
       msg.sender == _controller,
@@ -15,23 +15,23 @@ contract Pool is LiquidityBootstrappingPool {
   }
 
   constructor(
-    address factoryAddress,
+    address bPool,
     address[] memory tokens,
-    uint256[] memory startBalances,
-    uint256[] memory startWeights,
-    uint256[] memory endWeights
+    uint[] memory startBalances,
+    uint[] memory startWeights,
+    uint[] memory endWeights,
+    uint swapFee
   )
     public
     LiquidityBootstrappingPool(
-      factoryAddress,
+      bPool,
       tokens,
       startBalances,
       startWeights,
       endWeights,
-      [0, 0, MIN_FEE] // startBlock, endBlock, swapFee
+      [0, 0, swapFee] // startBlock, endBlock, swapFee
     )
   {
-
   }
 
   function rebind(address token, uint balance, uint denorm)
@@ -40,7 +40,7 @@ contract Pool is LiquidityBootstrappingPool {
   {
     _bPool.rebind(token, balance, denorm);
     IERC20 erc20 = IERC20(token);
-    // send any residue tokens to core
+    // send any residue tokens to core. This situation may arise if we bind balance less than previous
     uint256 residueBalance = erc20.balanceOf(address(this));
     if (residueBalance > 0) {
       erc20.transfer(_controller, residueBalance);

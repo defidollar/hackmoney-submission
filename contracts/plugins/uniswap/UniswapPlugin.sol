@@ -4,7 +4,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { IUniswap } from "./IUniswap.sol";
 import { AavePlugin } from "../aave/AavePlugin.sol";
-import { Pool } from "../../Pool.sol";
+import { LBP as Pool } from "../../balancer/LBP.sol";
 
 contract UniswapPlugin {
   IUniswap public uniswap;

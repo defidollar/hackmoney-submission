@@ -6,7 +6,7 @@ const aToken = artifacts.require("MockIAToken");
 
 const TMath = artifacts.require('TMath');
 // const BFactory = artifacts.require('BFactory');
-const BPool = artifacts.require('BPool');
+const BPool = artifacts.require('ModifiedBPool');
 
 const Core = artifacts.require("Core");
 const AavePlugin = artifacts.require("AavePlugin");
@@ -15,7 +15,7 @@ const MockUniswap = artifacts.require("MockUniswap");
 const Reserve = artifacts.require("Reserve");
 const Oracle = artifacts.require("Oracle");
 const Aggregator = artifacts.require("MockAggregator");
-const Pool = artifacts.require('Pool');
+const Pool = artifacts.require('LBP');
 
 const NUM_RESERVES = parseInt(process.env.NUM_RESERVES) || 2;
 const toBN = web3.utils.toBN
@@ -69,16 +69,18 @@ module.exports = async function (deployer, network, accounts) {
   contracts.defidollar.bpool = bPool.address
 
   // Balancer Pool
+
   const amount = web3.utils.toWei(process.env.INITIAL_AMOUNT || '50') // of each
   const weight = web3.utils.toWei('10') // giving equal weight to each coin
+  const swapFee = web3.utils.toBN('10').pow(web3.utils.toBN('12')) // min_fee
   await deployer.deploy(
     Pool,
     BPool.address, // passing bpool address instead
-    // BFactory.address, // factoryAddress
     aTokens.map(a => a.address), // tokens
     (new Array(NUM_RESERVES)).fill(amount), // startBalances
     (new Array(NUM_RESERVES)).fill(weight), // startWeights
-    (new Array(NUM_RESERVES)).fill(weight) // endWeights
+    (new Array(NUM_RESERVES)).fill(weight), // endWeights
+    swapFee
   );
   const pool = await Pool.deployed()
   bPool.setController(pool.address)

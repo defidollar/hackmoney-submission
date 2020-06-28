@@ -15,7 +15,6 @@ pragma solidity 0.5.12;
 
 import "./BToken.sol";
 import "./BMath.sol";
-import { IAToken } from "../plugins/aave/IAToken.sol";
 
 contract BPool is BBronze, BToken, BMath {
 
@@ -72,16 +71,16 @@ contract BPool is BBronze, BToken, BMath {
     bool private _mutex;
 
     address private _factory;    // BFactory address to push token exitFee to
-    address private _controller; // has CONTROL role
+    address internal _controller; // has CONTROL role
     bool private _publicSwap; // true if PUBLIC can call SWAP functions
 
     // `setSwapFee` and `finalize` require CONTROL
     // `finalize` sets `PUBLIC can SWAP`, `PUBLIC can JOIN`
-    uint private _swapFee;
+    uint internal _swapFee;
     bool private _finalized;
 
     address[] private _tokens;
-    mapping(address=>Record) private  _records;
+    mapping(address=>Record) internal _records;
     uint private _totalWeight;
 
     constructor() public {
@@ -240,7 +239,7 @@ contract BPool is BBronze, BToken, BMath {
 
 
     function bind(address token, uint balance, uint denorm)
-        external
+        public
         _logs_
         // _lock_  Bind does not lock because it jumps to `rebind`, which does
     {
@@ -257,7 +256,6 @@ contract BPool is BBronze, BToken, BMath {
             balance: 0   // and set by `rebind`
         });
         _tokens.push(token);
-        IAToken(token).allowInterestRedirectionTo(_controller);
         rebind(token, balance, denorm);
     }
 
@@ -703,7 +701,6 @@ contract BPool is BBronze, BToken, BMath {
     function _pullUnderlying(address erc20, address from, uint amount)
         internal
     {
-        if (amount == 0) return;
         bool xfer = IERC20(erc20).transferFrom(from, address(this), amount);
         require(xfer, "ERR_ERC20_FALSE");
     }
@@ -711,7 +708,6 @@ contract BPool is BBronze, BToken, BMath {
     function _pushUnderlying(address erc20, address to, uint amount)
         internal
     {
-        if (amount == 0) return;
         bool xfer = IERC20(erc20).transfer(to, amount);
         require(xfer, "ERR_ERC20_FALSE");
     }
@@ -738,23 +734,6 @@ contract BPool is BBronze, BToken, BMath {
         internal
     {
         _burn(amount);
-    }
-
-    // added functions
-    function calcOutGivenIn(address tokenIn, uint tokenAmountIn, address tokenOut)
-        public view
-        returns (uint /* tokenAmountOut */)
-    {
-        Record storage inRecord = _records[address(tokenIn)];
-        Record storage outRecord = _records[address(tokenOut)];
-        return calcOutGivenIn(
-            inRecord.balance,
-            inRecord.denorm,
-            outRecord.balance,
-            outRecord.denorm,
-            tokenAmountIn,
-            _swapFee
-        );
     }
 
 }

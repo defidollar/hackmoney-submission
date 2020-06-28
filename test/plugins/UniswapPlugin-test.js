@@ -7,7 +7,7 @@ const fromWei = web3.utils.fromWei;
 const toBN =web3.utils.toBN;
 const MAX = web3.utils.toTwosComplement(-1);
 
-contract("UniswapPlugin", accounts => {
+contract.skip("UniswapPlugin", accounts => {
   const admin = accounts[0]
   let _artifacts
 

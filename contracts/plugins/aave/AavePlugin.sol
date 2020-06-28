@@ -1,9 +1,11 @@
 pragma solidity ^0.5.12;
 
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 import { IAToken } from "./IAToken.sol";
 import { ILendingPool } from "./ILendingPool.sol";
 
-import "../../Pool.sol";
+import { LBP as Pool } from "../../balancer/LBP.sol";
 import "../../Core.sol";
 
 contract AavePlugin {

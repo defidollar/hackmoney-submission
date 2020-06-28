@@ -73,7 +73,6 @@ contract LiquidityBootstrappingPool is PCToken {
 
 
     constructor(
-        // address factoryAddress,
         address bPool,
         address[] memory tokens,
         uint256[] memory startBalances,
@@ -84,7 +83,6 @@ contract LiquidityBootstrappingPool is PCToken {
         public
     {
         _controller = msg.sender;
-        // _bFactory = IBFactory(factoryAddress);
         _bPool = IBPool(bPool);
         _tokens = tokens;
         _startBalances = startBalances;
@@ -112,9 +110,6 @@ contract LiquidityBootstrappingPool is PCToken {
     {
         require(block.number >= _startBlock, "ERR_START_BLOCK");
         require(!_created, "ERR_IS_CREATED");
-
-        // Deploy new BPool
-        // _bPool = _bFactory.newBPool();
 
         _bPool.setSwapFee(_swapFee);
         _bPool.setPublicSwap(true);
